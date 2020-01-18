@@ -30,13 +30,37 @@ namespace ForceDoJob
         static bool Prefix(SkillRecord __instance, ref int __state)
         {
             __state = -1;
-            if (Settings.CanLoseLevel)
-                return true;
 
-            if (__instance.xpSinceLastLevel == 0)
+            if (!Settings.AllowSkillLoss ||
+                (!Settings.CanLoseLevel && __instance.xpSinceLastLevel == 0))
+            {
                 return false;
+            }
 
             __state = __instance.levelInt;
+
+            if (Settings.AdjustSkillLossCaps &&
+                __instance.GetType().GetField("pawn", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance) is Pawn pawn)
+            {
+                float exp = (!pawn.story.traits.HasTrait(TraitDefOf.GreatMemory)) ? 1f : 0.5f;
+                int i = __instance.levelInt - 10;
+                if (i >= 0)
+                {
+                    var multiplier = Settings.SkillLossCaps[i];
+                    if (multiplier < 0)
+                    {
+                        __instance.Learn(exp * multiplier);
+
+                        if (__state > 0 && __instance.levelInt != __state)
+                        {
+                            __instance.levelInt = __state;
+                            __instance.xpSinceLastLevel = 0;
+                        }
+                    }
+                }
+                return false;
+            }
+
             return true;
         }
 

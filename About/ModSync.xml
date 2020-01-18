@@ -2,7 +2,7 @@
 <ModSyncNinjaData>
   <ID>a3ceaeba-bed0-462c-8e43-18ffc798981c</ID>
   <ModName>[KV] Change Skill Levels &amp; Don't Lose Levels</ModName>
-  <Version>1.0.0.1</Version>
+  <Version>1.0.1.0</Version>
   <SaveBreaking>False</SaveBreaking>
   <Host name="Github">
     <Owner>KiameV</Owner>

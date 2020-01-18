@@ -10,6 +10,7 @@ namespace ForceDoJob
     {
         private Vector2 scrollPosition = new Vector2(0, 0);
         private List<CurveValueBuffer> buffers = null;
+        private List<string> skillLossCapBuffers = null;
         private bool showGraph = false;
         private float previousY = 0;
 
@@ -23,17 +24,74 @@ namespace ForceDoJob
             return "Change Skill Level";
         }
 
+        public void ResetCaps()
+        {
+            skillLossCapBuffers = new List<string>(Settings.SkillLossCaps.Count);
+            for (int i = 0; i < Settings.SkillLossCaps.Count; ++i)
+                skillLossCapBuffers.Add(Settings.SkillLossCaps[i].ToString());
+        }
+
         public override void DoSettingsWindowContents(Rect rect)
         {
             if (Settings.CustomCurve == null)
                 Settings.CustomCurve = CreateDefaultCurve();
 
+            if (skillLossCapBuffers == null)
+            {
+                Settings.InitializeCaps();
+                ResetCaps();
+            }
+
             if (buffers == null)
                 buffers = this.CreateBuffers();
 
             float y = rect.yMin;
-            Widgets.CheckboxLabeled(new Rect(0, y, 250, 30), "Allow Skills to Lose Level", ref Settings.CanLoseLevel);
+
+            Widgets.CheckboxLabeled(new Rect(0, y, 250, 30), "Allow Skill Experience Loss", ref Settings.AllowSkillLoss);
             y += 32;
+
+            if (Settings.AllowSkillLoss)
+            {
+                Widgets.CheckboxLabeled(new Rect(20, y, 300, 30), "Allow Skills to Lose Level", ref Settings.CanLoseLevel);
+                y += 32;
+
+                Widgets.CheckboxLabeled(new Rect(20, y, 300, 30), "Customize Experience Loss Per Tick", ref Settings.AdjustSkillLossCaps);
+                if (Settings.AdjustSkillLossCaps)
+                {
+                    y += 32;
+                    for (int i = 0; i < skillLossCapBuffers.Count; ++i)
+                    {
+                        skillLossCapBuffers[i] = Widgets.TextEntryLabeled(new Rect(40, y, 150, 30), $"Level {(i + 10).ToString()}: ", skillLossCapBuffers[i]);
+                        y += 32;
+                    }
+
+                    if (Widgets.ButtonText(new Rect(40, y, 100, 30), "Apply"))
+                    {
+                        for (int i = 0; i < skillLossCapBuffers.Count; ++i)
+                        {
+                            if (float.TryParse(skillLossCapBuffers[i], out float v) && v >= -50f && v <= 0f)
+                            {
+                                Settings.SkillLossCaps[i] = v;
+                                Messages.Message("Skill Loss Per Tick Set", MessageTypeDefOf.PositiveEvent);
+                            }
+                            else
+                            {
+                                Log.Error((i + 10).ToString() + "'s Skill Loss Cap must be between -50 and 0");
+                                Messages.Message("Error while setting skill loss", MessageTypeDefOf.NegativeEvent);
+                            }
+                        }
+                    }
+
+                    if (Widgets.ButtonText(new Rect(160, y, 100, 30), "Reset"))
+                    {
+                        Settings.Reset();
+                        ResetCaps();
+                    }
+                    y += 10;
+                }
+                y += 32;
+            }
+
             Widgets.CheckboxLabeled(new Rect(0, y, 250, 30), "Customize Experience Needed", ref Settings.HasCustomCurve);
             y += 32;
             if (Settings.HasCustomCurve)
@@ -166,28 +224,42 @@ namespace ForceDoJob
     {
         private List<SimpleCurveValues> values = null;
 
+        public static bool AllowSkillLoss = true;
+        public static bool AdjustSkillLossCaps = false;
+        public static List<float> SkillLossCaps = new List<float>(11);
         public static bool CanLoseLevel = false;
         public static bool HasCustomCurve = false;
         public static SimpleCurve CustomCurve = null;
+
+        public Settings()
+        {
+            InitializeCaps();
+        }
 
         public override void ExposeData()
         {
             base.ExposeData();
 
-            if (Scribe.mode == LoadSaveMode.Saving && CustomCurve != null)
+            if (Scribe.mode == LoadSaveMode.Saving)
             {
-                values = new List<SimpleCurveValues>(CustomCurve.PointsCount);
-                foreach (CurvePoint p in CustomCurve)
+                if (CustomCurve != null)
                 {
-                    values.Add(
-                        new SimpleCurveValues()
-                        {
-                            StartLevel = p.x,
-                            ExpNeeded = p.y
-                        });
+                    values = new List<SimpleCurveValues>(CustomCurve.PointsCount);
+                    foreach (CurvePoint p in CustomCurve)
+                    {
+                        values.Add(
+                            new SimpleCurveValues()
+                            {
+                                StartLevel = p.x,
+                                ExpNeeded = p.y
+                            });
+                    }
                 }
             }
 
+            Scribe_Values.Look<bool>(ref AllowSkillLoss, "ChangeSkillLevel.AllowSkillLoss", true);
+            Scribe_Values.Look<bool>(ref AdjustSkillLossCaps, "ChangeSkillLevel.AdjustSkillLossCaps", false);
+            Scribe_Collections.Look(ref SkillLossCaps, "ChangeSkillLevel.SkillLossCaps", LookMode.Value, new object[0]);
             Scribe_Values.Look<bool>(ref CanLoseLevel, "ChangeSkillLevel.CanLoseLevel", false);
             Scribe_Values.Look<bool>(ref HasCustomCurve, "ChangeSkillLevel.HasCustomCurve", false);
             Scribe_Collections.Look(ref this.values, "ChangeSkillLevel.CurvePoints", LookMode.Deep, new object[0]);
@@ -209,13 +281,38 @@ namespace ForceDoJob
                         }
                     }
                 }
+                InitializeCaps();
             }
-            if ((Scribe.mode == LoadSaveMode.PostLoadInit || Scribe.mode == LoadSaveMode.Saving) && 
+            if ((Scribe.mode == LoadSaveMode.PostLoadInit || Scribe.mode == LoadSaveMode.Saving) &&
                 this.values != null)
             {
                 this.values.Clear();
                 this.values = null;
             }
+        }
+
+        public static void InitializeCaps()
+        {
+            if (SkillLossCaps == null || SkillLossCaps.Count == 0)
+            {
+                Reset();
+            }
+        }
+
+        public static void Reset()
+        {
+            SkillLossCaps.Clear();
+            SkillLossCaps.Add(-0.1f);
+            SkillLossCaps.Add(-0.2f);
+            SkillLossCaps.Add(-0.4f);
+            SkillLossCaps.Add(-0.6f);
+            SkillLossCaps.Add(-1f);
+            SkillLossCaps.Add(-1.8f);
+            SkillLossCaps.Add(-2.8f);
+            SkillLossCaps.Add(-4f);
+            SkillLossCaps.Add(-6f);
+            SkillLossCaps.Add(-8f);
+            SkillLossCaps.Add(-12f);
         }
 
         private class SimpleCurveValues : IExposable
