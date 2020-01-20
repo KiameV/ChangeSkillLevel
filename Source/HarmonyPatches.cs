@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Verse;
 
-namespace ForceDoJob
+namespace ChangeSkillLevel
 {
     [StaticConstructorOnStartup]
     class Main

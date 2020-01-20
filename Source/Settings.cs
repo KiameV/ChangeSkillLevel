@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
-namespace ForceDoJob
+namespace ChangeSkillLevel
 {
     public class SettingsController : Mod
     {
