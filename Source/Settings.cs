@@ -257,11 +257,11 @@ namespace ForceDoJob
                 }
             }
 
-            Scribe_Values.Look<bool>(ref AllowSkillLoss, "ChangeSkillLevel.AllowSkillLoss", true);
-            Scribe_Values.Look<bool>(ref AdjustSkillLossCaps, "ChangeSkillLevel.AdjustSkillLossCaps", false);
+            Scribe_Values.Look<bool>(ref AllowSkillLoss, "ChangeSkillLevel.AllowSkillLoss", true, true);
+            Scribe_Values.Look<bool>(ref AdjustSkillLossCaps, "ChangeSkillLevel.AdjustSkillLossCaps", false, true);
             Scribe_Collections.Look(ref SkillLossCaps, "ChangeSkillLevel.SkillLossCaps", LookMode.Value, new object[0]);
-            Scribe_Values.Look<bool>(ref CanLoseLevel, "ChangeSkillLevel.CanLoseLevel", false);
-            Scribe_Values.Look<bool>(ref HasCustomCurve, "ChangeSkillLevel.HasCustomCurve", false);
+            Scribe_Values.Look<bool>(ref CanLoseLevel, "ChangeSkillLevel.CanLoseLevel", false, true);
+            Scribe_Values.Look<bool>(ref HasCustomCurve, "ChangeSkillLevel.HasCustomCurve", false, true);
             Scribe_Collections.Look(ref this.values, "ChangeSkillLevel.CurvePoints", LookMode.Deep, new object[0]);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
@@ -281,7 +281,8 @@ namespace ForceDoJob
                         }
                     }
                 }
-                InitializeCaps();
+                if (CanLoseLevel && AdjustSkillLossCaps)
+                    InitializeCaps();
             }
             if ((Scribe.mode == LoadSaveMode.PostLoadInit || Scribe.mode == LoadSaveMode.Saving) &&
                 this.values != null)
