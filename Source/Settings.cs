@@ -44,7 +44,7 @@ namespace ChangeSkillLevel
             if (buffers == null|| buffers.Count == 0)
                 buffers = this.CreateBuffers();
 
-            Widgets.BeginScrollView(new Rect(20, rect.yMin, 450, 500), ref this.scrollPosition, new Rect(0, 0, 434, this.previousY));
+            Widgets.BeginScrollView(new Rect(20, rect.yMin, 725, 550), ref this.scrollPosition, new Rect(0, 0, 709, this.previousY));
 
             this.previousY = 0;
             Widgets.CheckboxLabeled(new Rect(0, this.previousY, 250, 30), "Allow Skill Experience Loss", ref Settings.AllowSkillLoss);
