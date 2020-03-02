@@ -1,7 +1,6 @@
-﻿using Harmony;
+﻿using HarmonyLib;
 using RimWorld;
 using System;
-using System.Collections.Generic;
 using System.Reflection;
 using Verse;
 
@@ -14,7 +13,7 @@ namespace ChangeSkillLevel
 
         static Main()
         {
-            var harmony = HarmonyInstance.Create("com.forcedojob.rimworld.mod");
+            var harmony = new Harmony("com.changeskilllevel.rimworld.mod");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
 
             Log.Message(
@@ -53,8 +52,16 @@ namespace ChangeSkillLevel
 
                         if (__state > 0 && __instance.levelInt != __state)
                         {
-                            __instance.levelInt = __state;
-                            __instance.xpSinceLastLevel = 0;
+                            if (Settings.CanLoseLevel)
+                            {
+                                __instance.levelInt = __state - 1;
+                                __instance.xpSinceLastLevel = SettingsController.CreateDefaultCurve().Evaluate(__instance.levelInt);
+                            }
+                            else
+                            {
+                                __instance.levelInt = __state;
+                                __instance.xpSinceLastLevel = 0;
+                            }
                         }
                     }
                 }
@@ -66,7 +73,7 @@ namespace ChangeSkillLevel
 
         static void Postfix(SkillRecord __instance, ref int __state)
         {
-            if (__state > 0 && __instance.levelInt != __state)
+            if (__state > 0 && !Settings.CanLoseLevel && __instance.levelInt != __state)
             {
                 __instance.levelInt = __state;
                 __instance.xpSinceLastLevel = 0;

@@ -128,7 +128,6 @@ namespace ChangeSkillLevel
                     Widgets.TextFieldNumeric(new Rect(120, this.previousY, 100, 30), ref b.ExpNeeded, ref b.ENBuffer);
                     this.previousY += 40;
                 }
-                this.previousY += 440;
 
                 if (Widgets.ButtonText(new Rect(30, this.previousY, 125, 30), "Apply", true, false, this.buffers.Count > 0))
                 {
@@ -161,15 +160,16 @@ namespace ChangeSkillLevel
 
                 if (Widgets.ButtonText(new Rect(200, this.previousY, 125, 30), "Reset".Translate()))
                 {
-                    Settings.CustomCurve = this.CreateDefaultCurve();
+                    Settings.CustomCurve = CreateDefaultCurve();
                     this.buffers.Clear();
                     this.buffers = this.CreateBuffers();
                 }
+                this.previousY += 440;
             }
             Widgets.EndScrollView();
         }
 
-        private SimpleCurve CreateDefaultCurve()
+        public static SimpleCurve CreateDefaultCurve()
         {
             return new SimpleCurve
             {
@@ -230,6 +230,19 @@ namespace ChangeSkillLevel
 
         public Settings()
         {
+            RepopulateSkillLossCaps();
+        }
+
+        public static void RepopulateSkillLossCaps()
+        {
+            if (SkillLossCaps == null)
+            {
+                SkillLossCaps = new List<float>(11);
+            }
+            else
+            {
+                SkillLossCaps.Clear();
+            }
             SkillLossCaps.Add(-0.1f);
             SkillLossCaps.Add(-0.2f);
             SkillLossCaps.Add(-0.4f);
@@ -289,11 +302,18 @@ namespace ChangeSkillLevel
                     }
                 }
             }
+
             if ((Scribe.mode == LoadSaveMode.PostLoadInit || Scribe.mode == LoadSaveMode.Saving) &&
                 this.values != null)
             {
                 this.values.Clear();
                 this.values = null;
+            }
+
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
+            {
+                if (SkillLossCaps == null)
+                    RepopulateSkillLossCaps();
             }
         }
 
