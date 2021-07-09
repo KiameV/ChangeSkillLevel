@@ -15,31 +15,38 @@ namespace ChangeSkillLevel
         {
             var harmony = new Harmony("com.changeskilllevel.rimworld.mod");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
-
-            Log.Message(
-                "Change Skill Levels Harmony Patches:" + Environment.NewLine +
-                "  Prefix:" + Environment.NewLine +
-                "    SkillRecord.Interval");
         }
     }
 
     [HarmonyPatch(typeof(SkillRecord), "Interval")]
     static class Patch_SkillRecord_Learn
     {
+        static FieldInfo pawnFI = null;
+        static FieldInfo PawnFI
+        {
+            get
+            {
+                if (pawnFI == null)
+                    pawnFI = typeof(SkillRecord).GetField("pawn", BindingFlags.NonPublic | BindingFlags.Instance);
+                return pawnFI;
+            }
+        }
+
         static bool Prefix(SkillRecord __instance, ref int __state)
         {
             __state = -1;
 
             if (!Settings.AllowSkillLoss ||
-                (!Settings.CanLoseLevel && __instance.xpSinceLastLevel == 0))
+                (!Settings.CanLoseLevel && __instance.xpSinceLastLevel <= 0))
             {
+                __instance.xpSinceLastLevel = 0;
                 return false;
             }
 
             __state = __instance.levelInt;
 
             if (Settings.AdjustSkillLossCaps &&
-                __instance.GetType().GetField("pawn", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance) is Pawn pawn)
+                PawnFI.GetValue(__instance) is Pawn pawn)
             {
                 float exp = (!pawn.story.traits.HasTrait(TraitDefOf.GreatMemory)) ? 1f : 0.5f;
                 int i = __instance.levelInt - 10;
