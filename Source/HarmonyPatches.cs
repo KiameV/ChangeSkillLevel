@@ -36,8 +36,9 @@ namespace ChangeSkillLevel
         {
             __state = -1;
 
-            if (!Settings.AllowSkillLoss ||
-                (!Settings.CanLoseLevel && __instance.xpSinceLastLevel <= 0))
+            if (!Settings.AllowSkillLoss)
+                return false;
+            if (!Settings.CanLoseLevel && __instance.xpSinceLastLevel <= 0)
             {
                 __instance.xpSinceLastLevel = 0;
                 return false;
